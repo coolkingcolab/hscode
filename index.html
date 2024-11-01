@@ -7,239 +7,307 @@
     <style>
         body {
             font-family: 'Nanum Gothic', Arial, sans-serif;
-            text-align: center;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            text-align: center;
+            background-color: #f0f2f5;
             line-height: 1.6;
         }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a73e8;
+            margin-bottom: 30px;
+        }
+        .btn, .choice-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover, .choice-btn:hover {
+            background-color: #0056b3;
+        }
+        .choice-btn {
+            display: block;
+            width: 100%;
+            background-color: white;
+            color: #007bff;
+            border: 2px solid #007bff;
+        }
+        .choice-btn:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .feedback {
+            font-size: 24px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .correct { color: #28a745; }
+        .incorrect { color: #dc3545; }
+        .progress {
+            margin: 20px 0;
+            font-size: 16px;
+            color: #666;
+        }
+        .results {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .result-item {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .result-item.correct { background-color: #d4edda; }
+        .result-item.incorrect { background-color: #f8d7da; }
         .screen {
             display: none;
         }
         .active {
             display: block;
         }
-        .question {
+        .loading {
             margin: 20px 0;
-            font-size: 1.2em;
-        }
-        .options {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        .option {
-            margin: 10px;
-            cursor: pointer;
-            padding: 10px 20px;
-            border: 2px solid #007bff;
-            border-radius: 5px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .option:hover, .option:focus {
-            background-color: #007bff;
-            color: white;
-        }
-        .feedback {
-            font-size: 1.5em;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-        .button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1em;
-            transition: background-color 0.3s;
-        }
-        .button:hover, .button:focus {
-            background-color: #0056b3;
-        }
-        #quiz-results {
-            text-align: left;
-            margin: 20px 0;
-        }
-        .correct {
-            color: green;
-        }
-        .incorrect {
-            color: red;
+            font-style: italic;
+            color: #666;
         }
         #error-message {
-            color: red;
+            color: #dc3545;
             font-weight: bold;
+            margin: 10px 0;
         }
         @media (max-width: 600px) {
-            .options {
-                flex-direction: column;
+            .container {
+                padding: 15px;
+            }
+            .choice-btn {
+                margin: 5px 0;
             }
         }
     </style>
 </head>
 <body>
-    <div id="start-screen" class="screen active">
-        <h1>HS마스터</h1>
-        <p>HS부호를 보고 한글품목명을 맞추는 퀴즈입니다. 총 10문제가 출제됩니다.</p>
-        <button id="start-button" class="button">시작하기</button>
-    </div>
-
-    <div id="quiz-screen" class="screen">
-        <h2 id="hs-code" aria-live="polite"></h2>
-        <div class="options">
-            <button id="option1" class="option"></button>
-            <button id="option2" class="option"></button>
+    <div class="container">
+        <div id="startScreen" class="screen active">
+            <h1>HS마스터</h1>
+            <p>HS부호를 보고 한글품목명을 맞추는 퀴즈입니다. 총 10문제가 출제됩니다.</p>
+            <div id="loadingText" class="loading">데이터를 불러오는 중...</div>
+            <div id="error-message" aria-live="assertive"></div>
+            <button class="btn" onclick="startQuiz()" disabled id="startButton">시작하기</button>
         </div>
-        <div id="feedback" class="feedback" aria-live="assertive"></div>
-        <div id="progress"></div>
+
+        <div id="quizScreen" class="screen">
+            <h2 id="hsCode" aria-live="polite"></h2>
+            <div id="choices"></div>
+            <div class="feedback" aria-live="assertive"></div>
+            <div class="progress"></div>
+        </div>
+
+        <div id="resultsScreen" class="screen">
+            <h2>퀴즈 결과</h2>
+            <div id="resultsList"></div>
+            <button class="btn" onclick="startQuiz()">다시 풀기</button>
+            <button class="btn" onclick="captureScreen()">캡처하기</button>
+        </div>
     </div>
 
-    <div id="result-screen" class="screen">
-        <h2>퀴즈 결과</h2>
-        <div id="quiz-results"></div>
-        <button id="retry-button" class="button">다시 풀기</button>
-        <button id="capture-button" class="button">캡처하기</button>
-    </div>
-
-    <div id="error-message" aria-live="assertive"></div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         let hsData = [];
+        let currentQuestions = [];
         let currentQuestionIndex = 0;
-        let correctAnswers = [];
-        let incorrectAnswers = [];
-        let quizQuestions = [];
+        let results = [];
 
-        async function loadHSData() {
+        async function loadCSVData() {
             try {
-                const response = await fetch("hscode.json");
+                const response = await fetch('hscode.csv');
                 if (!response.ok) {
-                    throw new Error('JSON 파일을 불러올 수 없습니다.');
+                    throw new Error('CSV 파일을 불러올 수 없습니다.');
                 }
-                hsData = await response.json();
-
-                // JSON 파일에서 읽어온 데이터를 콘솔에 출력하여 확인
-                console.log("불러온 데이터:", hsData);
+                const csvText = await response.text();
+                
+                const lines = csvText.split('\n');
+                hsData = lines.filter(line => line.trim() !== '')
+                    .map(line => {
+                        const [code, name] = line.split(',').map(item => item.trim().replace(/"/g, ''));
+                        return { code, name };
+                    })
+                    .filter(item => item.code && item.name); // 유효한 데이터만 필터링
 
                 if (hsData.length === 0) {
-                    throw new Error('JSON 파일에 유효한 데이터가 없습니다.');
+                    throw new Error('CSV 파일에 유효한 데이터가 없습니다.');
                 }
+
+                document.getElementById('loadingText').textContent = '데이터 로드 완료!';
+                document.getElementById('startButton').disabled = false;
             } catch (error) {
-                document.getElementById("error-message").textContent = error.message;
-                console.error('에러 메시지:', error);
-                throw error;
+                document.getElementById('error-message').textContent = 
+                    `데이터 로드 실패: ${error.message}`;
+                console.error('CSV 로드 에러:', error);
             }
         }
 
-        document.getElementById("start-button").addEventListener("click", async () => {
-            try {
-                await loadHSData();
-                quizQuestions = generateQuizQuestions();
-                startQuiz();
-            } catch (error) {
-                console.error('퀴즈를 시작할 수 없습니다:', error);
-            }
-        });
+        window.onload = loadCSVData;
 
-        function generateQuizQuestions() {
-            return hsData.sort(() => Math.random() - 0.5).slice(0, 10);
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
         }
 
-        function startQuiz() {
-            currentQuestionIndex = 0;
-            correctAnswers = [];
-            incorrectAnswers = [];
-            showScreen("quiz-screen");
-            showQuestion();
+        function getRandomItem(arr, exclude) {
+            let item;
+            do {
+                item = arr[Math.floor(Math.random() * arr.length)];
+            } while (item === exclude);
+            return item;
+        }
+
+        function generateQuestions() {
+            const shuffled = shuffleArray([...hsData]);
+            return shuffled.slice(0, 10).map(question => {
+                const wrongAnswer = getRandomItem(hsData, question);
+                const choices = shuffleArray([
+                    { text: question.name, correct: true },
+                    { text: wrongAnswer.name, correct: false }
+                ]);
+                return {
+                    code: question.code,
+                    correctAnswer: question.name,
+                    choices: choices
+                };
+            });
         }
 
         function showQuestion() {
-            const question = quizQuestions[currentQuestionIndex];
-            document.getElementById("hs-code").textContent = `HS 부호: ${question.hsCode}`;
-            const options = generateOptions(question.itemName);
-            const optionElements = document.querySelectorAll(".option");
-            optionElements.forEach((option, index) => {
-                option.textContent = options[index];
-                option.disabled = false;
-                option.onclick = () => checkAnswer(option.textContent, question);
+            const question = currentQuestions[currentQuestionIndex];
+            document.querySelector('.progress').textContent = `${currentQuestionIndex + 1} / 10`;
+            document.getElementById('hsCode').textContent = `HS 부호: ${question.code}`;
+            
+            const choicesContainer = document.getElementById('choices');
+            choicesContainer.innerHTML = '';
+            question.choices.forEach((choice, index) => {
+                const button = document.createElement('button');
+                button.className = 'choice-btn';
+                button.textContent = choice.text;
+                button.onclick = () => checkAnswer(choice.correct, choice.text, question.correctAnswer);
+                choicesContainer.appendChild(button);
             });
-            updateProgress();
         }
 
-        function generateOptions(correctAnswer) {
-            const wrongAnswer = hsData.filter(item => item.itemName !== correctAnswer)[Math.floor(Math.random() * (hsData.length - 1))].itemName;
-            return Math.random() > 0.5 ? [correctAnswer, wrongAnswer] : [wrongAnswer, correctAnswer];
-        }
+        function checkAnswer(isCorrect, selectedAnswer, correctAnswer) {
+            const feedback = document.querySelector('.feedback');
+            feedback.textContent = isCorrect ? '⭕ 정답입니다!' : `❌ 틀렸습니다! (정답: ${correctAnswer})`;
+            feedback.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+            
+            // 선택지 비활성화
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            results.push({
+                questionCode: currentQuestions[currentQuestionIndex].code,
+                correct: isCorrect,
+                selectedAnswer: selectedAnswer,
+                correctAnswer: correctAnswer
+            });
 
-        function checkAnswer(selectedAnswer, question) {
-            const feedbackElement = document.getElementById("feedback");
-            if (selectedAnswer === question.itemName) {
-                correctAnswers.push(question);
-                feedbackElement.textContent = "O";
-                feedbackElement.className = "feedback correct";
-            } else {
-                incorrectAnswers.push(question);
-                feedbackElement.textContent = `X (정답: ${question.itemName})`;
-                feedbackElement.className = "feedback incorrect";
-            }
-            disableOptions();
             setTimeout(() => {
-                nextQuestion();
+                feedback.textContent = '';
+                currentQuestionIndex++;
+                if (currentQuestionIndex < currentQuestions.length) {
+                    showQuestion();
+                } else {
+                    showResults();
+                }
             }, 1000);
         }
 
-        function disableOptions() {
-            document.querySelectorAll(".option").forEach(option => {
-                option.disabled = true;
-            });
-        }
+        function showResults() {
+            showScreen('resultsScreen');
+            
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+            
+            const correctCount = results.filter(r => r.correct).length;
+            resultsList.innerHTML = `<h3>총점: ${correctCount}/10</h3>`;
+            
+            // 맞은 문제
+            if (results.filter(r => r.correct).length > 0) {
+                resultsList.innerHTML += '<h3>맞춘 문제</h3>';
+                results.forEach((result, index) => {
+                    if (result.correct) {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item correct';
+                        resultItem.innerHTML = `
+                            <p>HS 부호: ${result.questionCode}</p>
+                            <p>품목명: ${result.selectedAnswer}</p>
+                        `;
+                        resultsList.appendChild(resultItem);
+                    }
+                });
+            }
 
-        function nextQuestion() {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < quizQuestions.length) {
-                showQuestion();
-            } else {
-                showResults();
+            // 틀린 문제
+            if (results.filter(r => !r.correct).length > 0) {
+                resultsList.innerHTML += '<h3>틀린 문제</h3>';
+                results.forEach((result, index) => {
+                    if (!result.correct) {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item incorrect';
+                        resultItem.innerHTML = `
+                            <p>HS 부호: ${result.questionCode}</p>
+                            <p>선택한 답: ${result.selectedAnswer}</p>
+                            <p>정답: ${result.correctAnswer}</p>
+                        `;
+                        resultsList.appendChild(resultItem);
+                    }
+                });
             }
         }
 
-        function updateProgress() {
-            document.getElementById("progress").textContent = `${currentQuestionIndex + 1} / ${quizQuestions.length}`;
-        }
-
-        function showResults() {
-            showScreen("result-screen");
-            const resultsElement = document.getElementById("quiz-results");
-            resultsElement.innerHTML = `
-                <h3>맞춘 문제 (${correctAnswers.length})</h3>
-                ${correctAnswers.map(q => `<p class="correct">HS 부호: ${q.hsCode}, 품목명: ${q.itemName}</p>`).join("")}
-                <h3>틀린 문제 (${incorrectAnswers.length})</h3>
-                ${incorrectAnswers.map(q => `<p class="incorrect">HS 부호: ${q.hsCode}, 품목명: ${q.itemName}</p>`).join("")}
-            `;
-        }
-
         function showScreen(screenId) {
-            document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
-            document.getElementById(screenId).classList.add("active");
+            document.querySelectorAll('.screen').forEach(screen => 
+                screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
         }
 
-        document.getElementById("retry-button").addEventListener("click", () => {
-            quizQuestions = generateQuizQuestions();
-            startQuiz();
-        });
+        function startQuiz() {
+            currentQuestions = generateQuestions();
+            currentQuestionIndex = 0;
+            results = [];
+            
+            showScreen('quizScreen');
+            showQuestion();
+        }
 
-        document.getElementById("capture-button").addEventListener("click", () => {
-            html2canvas(document.querySelector("#result-screen")).then(canvas => {
+        async function captureScreen() {
+            try {
+                const canvas = await html2canvas(document.querySelector("#resultsScreen"));
                 const link = document.createElement("a");
                 link.href = canvas.toDataURL("image/png");
                 link.download = "HS마스터_퀴즈결과.png";
                 link.click();
-            });
-        });
+            } catch (error) {
+                alert('화면 캡처 중 오류가 발생했습니다.');
+                console.error('캡처 에러:', error);
+            }
+        }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
