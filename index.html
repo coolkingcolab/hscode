@@ -120,8 +120,8 @@
                     throw new Error('CSV 파일을 불러올 수 없습니다.');
                 }
                 const text = await response.text();
-                const rows = text.split("\n").map(row => row.split(","));
-                hsData = rows.filter(row => row.length === 2).map(row => ({ hsCode: row[0], itemName: row[1] }));
+                const rows = text.split("\n").map(row => row.trim().split(","));
+                hsData = rows.filter(row => row.length === 2 && row[0] && row[1]).map(row => ({ hsCode: row[0].trim(), itemName: row[1].trim() }));
                 if (hsData.length === 0) {
                     throw new Error('CSV 파일에 유효한 데이터가 없습니다.');
                 }
