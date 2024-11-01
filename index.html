@@ -115,7 +115,7 @@
 
         async function loadHSData() {
             try {
-                const response = await fetch("/관세청_HS부호_20240101.csv");
+                const response = await fetch("hscode.csv");
                 if (!response.ok) {
                     throw new Error('CSV 파일을 불러올 수 없습니다.');
                 }
